@@ -1,11 +1,15 @@
 package main
 
 import (
-	"github.com/NeptuneG/go-to-k8s/handlers"
-	"github.com/NeptuneG/go-to-k8s/version"
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/NeptuneG/go-to-k8s/handlers"
+	"github.com/NeptuneG/go-to-k8s/version"
 )
 
 func main() {
@@ -16,6 +20,26 @@ func main() {
 		log.Fatal("port has not been specified")
 	}
 	router := handlers.Router(version.BuildTimestamp, version.Commit, version.Release)
+	interrput := make(chan os.Signal, 1)
+	signal.Notify(interrput, os.Interrupt, os.Kill, syscall.SIGTERM)
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: router,
+	}
+	go func() {
+		log.Fatal(server.ListenAndServe())
+	}()
 	log.Print("The service is about to serve on :" + port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	killSignal := <-interrput
+	switch killSignal {
+	case os.Kill:
+		log.Print("Got SIGKILL")
+	case os.Interrupt:
+		log.Print("Got SIGINT")
+	case syscall.SIGTERM:
+		log.Print("Got SIGTERM")
+	}
+	log.Print("The service is about to shut down")
+	server.Shutdown(context.Background())
+	log.Print("Service shutting down completed")
 }
