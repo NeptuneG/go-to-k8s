@@ -1,5 +1,7 @@
 APP?=app
 APP_PORT?=9000
+GOOS?=linux
+GOARCH=amd64
 
 PROJECT?=github.com/NeptuneG/go-to-k8s
 
@@ -10,13 +12,18 @@ BUILD_TIMESTAMP?=$(shell date -u '+%Y%m%d-%H%M%S')
 clean:
 	rm -f ${APP}
 build: clean
-	go build \
+	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build \
 		-ldflags "-s -w \
 		-X ${PROJECT}/version.Release=${RELEASE} \
 		-X ${PROJECT}/version.Commit=${COMMIT} \
 		-X ${PROJECT}/version.BuildTimestamp=${BUILD_TIMESTAMP}" \
 		-o ${APP}
-run: build
+container: build
+	docker build -t ${APP}:${RELEASE} .
+run: container
+	dokcer stop ${APP}:${RELEASE} || true && docker rm ${APP}:${RELEASE} || true
+	docker run --name ${APP} -p ${APP_PORT}:${APP_PORT} --rm \
+		-e "APP_PORT=${APP_PORT}" ${APP}:${RELEASE}
 	APP_PORT=${APP_PORT} ./${APP}
 test:
 	go test -v -race ./...

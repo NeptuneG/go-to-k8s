@@ -1,0 +1,5 @@
+FROM scratch
+ENV APP_PORT 9000
+EXPOSE ${APP_PORT}
+COPY app /
+CMD [ "/app" ]
