@@ -22,7 +22,7 @@ build: clean
 container: build
 	docker build -t ${CONTAINER_IMAGE}:${RELEASE} .
 run: container
-	dokcer stop ${APP}:${RELEASE} || true && docker rm ${APP}:${RELEASE} || true
+	docker stop ${APP}:${RELEASE} || true && docker rm ${APP}:${RELEASE} || true
 	docker run --name ${APP} -p ${APP_PORT}:${APP_PORT} --rm \
 		-e "APP_PORT=${APP_PORT}" ${APP}:${RELEASE}
 	APP_PORT=${APP_PORT} ./${APP}
